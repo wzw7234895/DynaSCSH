@@ -1,0 +1,76 @@
+\section{Preliminaries}
+
+We briefly review the HIN model, the $(k,\mathcal{P})$-truss community definition, and the static SCSH problem. Table~\ref{tab:notation} summarizes the key notation used throughout the paper.
+
+\subsection{Heterogeneous Information Networks}
+
+A heterogeneous information network (HIN) is a typed graph $\mathcal{G} = (V,E,\phi,\psi)$. Here $V$ and $E$ are nodes and edges, $\phi:V\rightarrow\mathcal{T}_V$ maps nodes to types, and $\psi:E\rightarrow\mathcal{T}_E$ maps edges to types, with multiple node or edge types. A \emph{meta-path} $\mathcal{P} = (T_1 \xrightarrow{R_1} T_2 \xrightarrow{R_2} \cdots \xrightarrow{R_{l-1}} T_l)$ specifies a composite relation between node types. For example, in a bibliographic HIN with Author (A), Paper (P), and Venue (V) types, the meta-path APA denotes co-authorship via shared papers.
+
+\subsection[The k,P-truss Model]{The $(k,\mathcal{P})$-truss Model}
+
+The $(k,\mathcal{P})$-truss~\cite{zhang2025scsh} generalizes the classical $k$-truss to HINs. For a symmetric meta-path $\mathcal{P}$ (where $T_1 = T_l$) and an edge $(u,v)$ whose endpoints both have type $T_1$, the \emph{meta-path triangle support} is:
+
+\begin{equation}
+\sigma_{\mathcal{P}}(u,v) = \big|\{ w \in V \mid (u,v,w) \text{ form a $\mathcal{P}$-triangle} \}\big|
+\label{eq:support}
+\end{equation}
+
+where a $\mathcal{P}$-triangle requires that all three pairwise edges exist and that each pair $(u,v)$, $(v,w)$, $(w,u)$ is connected via at least one instance of meta-path $\mathcal{P}$.
+
+\begin{table}[htbp]
+\centering
+\caption{Key Notation}
+\label{tab:notation}
+\begin{tabular}{c l}
+\toprule
+Symbol & Definition \\
+\midrule
+$\mathcal{G} = (V, E, \phi, \psi)$ & Heterogeneous information network \\
+$\mathcal{P}$ & Meta-path pattern \\
+$k$ & Truss parameter (minimum internal support) \\
+$s$ & Community size bound \\
+$q$ & Query node \\
+$\sigma_{\mathcal{P}}(u,v)$ & Meta-path triangle support of edge $(u,v)$ \\
+$d_{\mathcal{P}}(u)$ & Meta-path degree of node $u$ \\
+$C_t$ & Maintained community at time $t$ \\
+$\mathcal{G}[C]$ & Induced subgraph of $C$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A subgraph $H \subseteq \mathcal{G}$ is a $(k,\mathcal{P})$-truss if it satisfies two conditions:
+
+\begin{enumerate}
+\item \textbf{Internal support:} Every edge $(u,v)$ in the induced subgraph $\mathcal{G}[H]$ has $\sigma_{\mathcal{P}}(u,v) \geq k$ when counting only triangles whose three nodes all lie within $H$.
+\item \textbf{Triangle connectivity:} Any two edges in $H$ are reachable via a sequence of shared $\mathcal{P}$-triangles.
+\end{enumerate}
+
+The $(k,\mathcal{P})$-truss is computed by iteratively peeling edges whose internal support falls below $k$, decrementing the support of co-triangle edges with each removal---a cascading process analogous to classical $k$-truss decomposition.
+
+\subsection{Size-Constrained Community Search (SCSH)}
+
+Given a query node $q$, meta-path $\mathcal{P}$, truss parameter $k$, and size bound $s$, the SCSH problem~\cite{zhang2025scsh} seeks a community $C \subseteq V$ that satisfies:
+
+\begin{equation}
+\begin{aligned}
+& \underset{C \subseteq V}{\text{maximize}} & & \kappa(\mathcal{G}[C]) \\
+& \text{subject to} & & q \in C,\; |C| = s,\; \mathcal{G}[C] \text{ is a } (k,\mathcal{P})\text{-truss}
+\end{aligned}
+\label{eq:scsh}
+\end{equation}
+
+where $\kappa(\cdot)$ denotes the trussness (maximum $k$ achievable) of the induced subgraph. Zhang et al. proved SCSH is NP-hard via reduction from maximum clique, and proposed exact Branch \& Bound algorithms (ESG and NSG) alongside a polynomial-time greedy heuristic.
+
+\subsection{Dynamic SCSH}
+
+We introduce the \emph{Dynamic SCSH} problem. Given an initial graph $\mathcal{G}_0$, an initial community $C_0$ satisfying Eq.~(\ref{eq:scsh}) at time $t=0$, and a stream of edge updates $\Delta = \{(e_1, op_1), (e_2, op_2), \ldots\}$ where $op_i \in \{\texttt{insert}, \texttt{delete}\}$, the goal is to maintain a community $C_t$ at each time $t$ such that $C_t$ satisfies the constraints of SCSH.
+
+The key challenge is that recomputing $C_t$ from scratch via SCSH at each time step is computationally prohibitive. The \emph{Dynamic SCSH} objective is:
+
+\begin{equation}
+\min \; \frac{1}{|\Delta|} \sum_{i=1}^{|\Delta|} \tau_i,
+\quad \tau_i = \text{latency of updating } C_{i-1} \rightarrow C_i
+\label{eq:dyn_obj}
+\end{equation}
+
+where the baseline for $\tau_i$ is the time required to run the static SCSH greedy heuristic on $\mathcal{G}_i$ from scratch.

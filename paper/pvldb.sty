@@ -1,0 +1,52 @@
+%% pvldb.sty -- VLDB / PVLDB Vol. 20 formatting overrides.
+%% Use immediately after \documentclass[sigconf,nonacm]{acmart}.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{pvldb}[2026/07/06 v1.0 VLDB 2027 / PVLDB Vol. 20]
+
+\RequirePackage{textcase}
+\RequirePackage{etoolbox}
+\makeatletter
+\expandafter\def\expandafter\@secfont\expandafter{\@secfont\MakeTextUppercase}
+\makeatother
+
+\newcommand\vldbdoi{XX.XX/XXX.XX}
+\newcommand\vldbpages{XXX-XXX}
+\newcommand\vldbvolume{20}
+\newcommand\vldbissue{1}
+\newcommand\vldbyear{2027}
+\newcommand\vldbauthors{\authors}
+\newcommand\vldbtitle{\shorttitle}
+\newcommand\vldbavailabilityurl{}
+\newcommand\vldbpagestyle{plain}
+
+\newcommand\vldbtopmatter{%
+  \pagestyle{\vldbpagestyle}%
+  \begingroup\small\noindent\raggedright\textbf{PVLDB Reference Format:}\\
+  \vldbauthors. \vldbtitle.
+  PVLDB, \vldbvolume(\vldbissue): \vldbpages, \vldbyear.\\
+  \href{https://doi.org/\vldbdoi}{doi:\vldbdoi}
+  \endgroup
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{\noindent
+  This work is licensed under the Creative Commons BY-NC-ND 4.0 International
+  License. Visit \url{https://creativecommons.org/licenses/by-nc-nd/4.0/} to view
+  a copy of this license. For any use beyond those covered by this license,
+  obtain permission by emailing \href{mailto:info@vldb.org}{info@vldb.org}.
+  Copyright is held by the owner/author(s). Publication rights licensed to the
+  VLDB Endowment. \\
+  \raggedright Proceedings of the VLDB Endowment, Vol. \vldbvolume, No.
+  \vldbissue\ %
+  ISSN 2150-8097. \\
+  \href{https://doi.org/\vldbdoi}{doi:\vldbdoi} \\
+  }\addtocounter{footnote}{-1}\endgroup
+  \par
+  \ifdefempty{\vldbavailabilityurl}{}{%
+    \vspace{.3cm}%
+    \begingroup\small\noindent\raggedright\textbf{PVLDB Artifact Availability:}\\
+    The source code, data, and/or other artifacts have been made available at
+    \url{\vldbavailabilityurl}.
+    \endgroup
+  }%
+}
+
+\endinput

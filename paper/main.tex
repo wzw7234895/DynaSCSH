@@ -1,0 +1,66 @@
+% VLDB template using acmart
+\documentclass[sigconf, nonacm]{acmart}
+\usepackage{pvldb}
+
+\usepackage{amsmath,amsfonts}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xspace}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds, shapes.geometric}
+\settopmatter{printacmref=false}
+
+\newcommand{\DynaSCSH}{\textsc{DYNASCSH}\xspace}
+\newcommand{\mtindex}{\textsc{MT-INDEX}\xspace}
+\newcommand{\qratio}{\text{$Q$-Ratio}\xspace}
+
+%% PVLDB metadata. Replace DOI/pages after acceptance.
+\renewcommand\vldbdoi{XX.XX/XXX.XX}
+\renewcommand\vldbpages{XXX-XXX}
+\renewcommand\vldbvolume{20}
+\renewcommand\vldbissue{1}
+\renewcommand\vldbyear{2027}
+\renewcommand\vldbtitle{Dynamic Size-Constrained Community Search over Evolving Heterogeneous Information Networks}
+\renewcommand\vldbavailabilityurl{https://github.com/wzw7234895/DynaSCSH}
+
+\begin{document}
+
+\title[Dynamic Size-Constrained Community Search]{Dynamic Size-Constrained Community Search over\texorpdfstring{\\}{ }Evolving Heterogeneous Information Networks}
+
+\author{Zhiwei Wang}
+\affiliation{%
+  \institution{Dalian Maritime University}
+  \city{Dalian}
+  \country{China}
+}
+\email{wzw7234895@gmail.com}
+
+\begin{abstract}
+Heterogeneous information networks (HINs) model typed entities and relations. Community search on HINs identifies cohesive subgraphs containing a query node, with applications in recommendation, fraud detection, and expert finding. While Zhang et al. recently formalized the size-constrained variant and proved it NP-hard, their solution is inherently static---recomputing communities from scratch whenever the graph changes. Real-world HINs are dynamic: new collaborations form, products are purchased, and relationships evolve continuously.
+
+We propose \DynaSCSH, a dynamic framework for maintaining size-constrained $(k,\mathcal{P})$-truss communities under projected source-edge insertions and deletions. \DynaSCSH combines three components: (1) a Meta-Path Triangle Index (\mtindex) storing $O(|E|)$ integer support counts and updating all co-triangle edge supports affected by a source-edge change, (2) an internal support cache that makes community validation independent of the full graph size, and (3) a localized repair mechanism with bounded-hop candidate search that validates support, size, query containment, and triangle connectivity before returning a repaired community.
+
+Experiments on 22 fixed-query synthetic DBLP configurations and a hybrid Planted Community Benchmark (26,850 nodes, 128,227 edges) demonstrate the properties of incremental maintenance. On insertion-only streams, \DynaSCSH preserves community identity exactly (Jaccard=1.000, avg.\ \qratio=1.000, avg.\ 3,824$\times$ speedup vs.\ static recompute). Deletion and mixed streams introduce natural divergence: deletion Jaccard spans 0.36--0.54 (\qratio=0.89--0.92), reflecting the inherent difficulty of maintaining a fixed-size community under edge removal. The hybrid benchmark confirms scalability to 128K-edge graphs (random updates $<$1\,ms, 5,900--10,700$\times$ speedup) and demonstrates localized repair success (10/30 targeted community-edge deletions repaired at $k$=2). Strict invariant checking (support, size, query containment, triangle connectivity) makes fallback recomputation explicit when local repair cannot certify validity.
+\end{abstract}
+
+\maketitle
+
+\vldbtopmatter
+
+\input{sections/s1_introduction}
+\input{sections/s2_related}
+\input{sections/s3_preliminaries}
+\input{sections/s4_method}
+\input{sections/s5_experiments}
+\input{sections/s6_conclusion}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

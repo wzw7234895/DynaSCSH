@@ -1,0 +1,2 @@
+benchmark,iterations,total_check_ms,noop_ms,net_ms_per_check,status
+tiny_author_graph_exact_validation,2000,112.367800,0.056600,0.056156,passed

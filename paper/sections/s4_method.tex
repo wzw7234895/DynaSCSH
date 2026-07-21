@@ -1,0 +1,146 @@
+\section[The DynaSCSH Framework]{The \DynaSCSH\ Framework}
+
+We present \DynaSCSH, a dynamic framework for maintaining size-constrained communities under projected source-edge updates. Figure~\ref{fig:architecture} illustrates the architecture: the \mtindex\ tracks global meta-path triangle support, the Internal Support Cache maintains per-community-edge internal truss counts, and the Localized Repair module searches for replacement nodes within a bounded hop radius. When repair fails, the framework falls back to fixed-query greedy recomputation---preserving the same query semantics as the static baseline while optimizing for the common case where random updates do not touch community edges.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+  font=\sffamily,
+  node distance=5pt,
+  every node/.style={align=center},
+  box/.style={draw, rounded corners=3pt, minimum height=1.3cm, font=\sffamily\scriptsize},
+  arr/.style={-{Stealth[length=5pt]}, thick},
+  yesarr/.style={arr, color=teal!70!black},
+  noarr/.style={arr, color=red!60!black},
+]
+
+\node[box, fill=blue!12, draw=blue!50!black, minimum height=1.9cm, text width=3.1cm]
+  (mtidx) {\textbf{MT-Index}\\[2pt] $O(|E|)$ count-based\\ $\sigma_{\mathcal{P}}(u,v)$ tracking\\ Update $O(d_{\mathcal{P}}^2)$};
+
+\node[box, fill=teal!12, draw=teal!50!black, minimum height=1.9cm, text width=3.1cm, right=14pt of mtidx]
+  (cache) {\textbf{Support Cache}\\[2pt] Per-edge $\sigma_{\mathcal{P}}^{int}(u,v)$\\ Graph-size independent check\\ community-miss fast path};
+
+\node[draw, dashed, rounded corners=8pt, draw=purple!50!black,
+      fit=(mtidx)(cache), inner sep=7pt,
+      label={[font=\sffamily\scriptsize\bfseries, text=purple!50!black]north west:Community $C$ ($|C|=s$)}]
+  (community) {};
+\begin{scope}[on background layer]
+\fill[purple!6, rounded corners=8pt] (community.south west) rectangle (community.north east);
+\end{scope}
+
+\node[left=20pt of mtidx, text width=1.5cm, font=\sffamily\scriptsize] (input)
+  {\textbf{Updates}\\ $\Delta=\{(e_i,op_i)\}$};
+\draw[arr] (input) -- (mtidx);
+
+\node[diamond, draw, aspect=2.4, below=24pt of community, font=\sffamily\scriptsize, inner sep=1pt]
+  (valid) {Valid?};
+\draw[arr] (community.south -| valid.north) -- (valid.north);
+
+\node[box, fill=orange!12, draw=orange!60!black, below=20pt of valid, minimum height=1.5cm, text width=4.6cm]
+  (repair) {\textbf{Localized Repair}: bounded-hop search, remove + replace, $|C|=s$};
+\draw[noarr] (valid.south) -- (repair.north) node[pos=0.5, right, text=red!60!black] {No};
+
+\node[box, fill=red!8, draw=red!60!black, below=14pt of repair, minimum height=1.1cm, text width=4.6cm]
+  (fallback) {\textbf{Greedy Fallback}: full recompute when repair fails};
+\draw[noarr] (repair) -- (fallback) node[pos=0.5, right, text=red!60!black] {Fail};
+
+\draw[yesarr] (valid.west) .. controls +(-1.0,0.3) and +(-1.0,-0.6) .. (mtidx.south)
+  node[pos=0.5, left, text=teal!50!black] {Yes};
+\draw[yesarr] (repair.west) .. controls +(-1.6,0.5) and +(-1.6,-0.3) .. (mtidx.south west)
+  node[pos=0.5, left, text=teal!50!black] {Success};
+
+\end{tikzpicture}}
+\caption{System architecture of \DynaSCSH. Projected source-edge updates enter the \mtindex\ (global meta-path triangle tracking), which feeds the Internal Support Cache inside the maintained community $C$. The validity check (diamond) routes updates: valid communities return immediately to the \mtindex\ (\emph{Yes}, graph-size independent fast path); violations (\emph{No}) trigger Localized Repair, which restores $C$ on success or falls back to fixed-query greedy recomputation (\emph{Fail}) when no bounded-hop replacement exists.}
+\Description{Architecture diagram showing update flow from projected source-edge updates through MT-Index, support cache, validity check, localized repair, and greedy fallback.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection[Meta-Path Triangle Index]{Meta-Path Triangle Index (\mtindex)}
+
+The \mtindex is a count-based index storing, for each edge $(u,v)$, the number of meta-path triangles in which it participates: $\sigma_{\mathcal{P}}(u,v)$. Unlike naive explicit-storage approaches that materialize triangle node tuples at $O(|E|\cdot d_{\max}^2)$ memory cost, the \mtindex stores only integer counts---$O(|E|)$ memory.
+
+\textbf{Construction.} For each node of type $T_1$ (the source type of $\mathcal{P}$), we enumerate its $\mathcal{P}$-neighbors and check triangle closure among pairs of neighbors. Each undirected edge is incremented exactly once per triangle, ensuring exact 1:1 counting (the total edge support sum is always divisible by 3).
+
+\textbf{Update.} For an insertion $(u,v)$, \mtindex enumerates common $\mathcal{P}$-neighbors and increments the three edge supports of each new triangle. For a deletion, it enumerates the witnesses before removing $(u,v)$ and decrements the same three supports. The update cost is $O(d_{\mathcal{P}}(u)d_{\mathcal{P}}(v))$, proportional to endpoint meta-path degrees. Raw HIN relation updates that change many projected source edges require projection refresh or index rebuild; they are outside the per-source-edge complexity claim.
+
+\textbf{Cascading collapse.} During $k$-truss peeling, when an edge is removed we must decrement the support of co-triangle edges. The \mtindex resolves these co-triangle edges on-demand via the \texttt{find\_co\_triangle\_edges} procedure, avoiding the need to pre-materialize triangle adjacency structures.
+
+\subsection{Internal Support Cache}
+
+The $(k,\mathcal{P})$-truss requires that each community edge has at least $k$ \emph{internal} triangles---triangles whose three nodes all lie within the community. Computing this from scratch requires $O(|C|^2 \cdot d_{\mathcal{P}}^2)$ time per validity check, which is prohibitive for high-velocity streams.
+
+The internal support cache is a dictionary mapping each community edge $(u,v)$ to its \emph{internal} support count: the number of nodes $w \in C$ such that $(u,v,w)$ form a meta-path triangle. The cache is built once during community initialization ($O(|C|^2)$) and then updated incrementally:
+
+\begin{itemize}
+\item \textbf{Edge insertion in community}: The new edge's internal support is computed on-demand. Existing edges' support is unaffected (monotonicity---insertions only increase global support, so internal support cannot decrease).
+\item \textbf{Edge deletion in community}: The deleted edge is removed from the cache. For each triangle $(u,v,w)$ that included the deleted edge, the internal support of edges $(u,w)$ and $(v,w)$ is decremented by 1.
+\end{itemize}
+
+\textbf{Graph-size independent validity check.} After any update, checking whether the community remains valid reduces to iterating over the cached dictionary and testing whether any edge has support $< k$, followed by a triangle-connectivity check when a community edge is deleted. This is $O(s^3)$ in the worst case for a size bound $s$, but it is independent of $|V|$ and $|E|$ and completes in microseconds for the small communities used in interactive search ($s \leq 20$ in our experiments).
+
+\textbf{Monotonicity optimization.} Edge insertions \emph{monotonically increase} the global triangle support of all edges. Since the internal support of a community edge cannot decrease after an insertion, a valid community remains valid. \DynaSCSH exploits this by returning immediately on insertion---no validity check, no repair.
+
+\subsection{Incremental Update Protocol}
+
+Algorithm~1 formalizes the update protocol.
+
+\begin{algorithm}[t]
+\caption{Incremental Update Protocol for \DynaSCSH}
+\label{alg:update}
+\begin{algorithmic}[1]
+\STATE \textbf{On edge insertion} $(u,v)$:
+\STATE \quad $\mtindex.\text{add\_edge}(u,v)$
+\STATE \quad \textbf{if} $C = \emptyset$ \textbf{then} return \textsc{FullRecompute}()
+\STATE \quad \textbf{if} $u \in C \land v \in C$ \textbf{then} refresh internal support cache
+\STATE \quad return $C$ \quad // monotonicity guarantees validity
+\STATE \textbf{On edge deletion} $(u,v)$:
+\STATE \quad $\mtindex.\text{remove\_edge}(u,v)$
+\STATE \quad \textbf{if} $u \notin C \lor v \notin C$ \textbf{then} return $C$ \quad // community-miss fast path
+\STATE \quad refresh internal support cache for $C$
+\STATE \quad $\mathcal{V} \leftarrow$ \{edges with support $< k$\}
+\STATE \quad \textbf{if} $\mathcal{V} = \emptyset$ \textbf{then} return $C$
+\STATE \quad \textbf{if} \textsc{LocalizedRepair}($\mathcal{V}$)
+\STATE \quad\quad \textbf{then} return repaired $C$
+\STATE \quad \textbf{else} return \textsc{FullRecompute}()
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Localized Repair}
+
+When community edges violate the $k$-truss condition after a deletion, \DynaSCSH attempts localized repair before falling back to full recomputation. The repair procedure:
+
+\begin{enumerate}
+\item Identifies nodes incident to the most violating edges, excluding the original query node from removal.
+\item Removes the worst-offending non-query node and searches for a replacement node within $h$ BFS hops of the affected region.
+\item Accepts the replacement only if the resulting node set has size $s$, contains the original query node, satisfies internal support $\geq k$ for every induced edge, and remains triangle-connected.
+\item If the candidate fails validation, backtracks and tries the next offending node.
+\item If no single-node repair succeeds, triggers full recomputation via the same fixed-query greedy heuristic used by the static baseline.
+\end{enumerate}
+
+The hop limit $h$ controls the repair search radius and the size of the candidate set; it affects latency but not correctness, because every candidate is fully validated before it can be returned.
+
+\textbf{Correctness invariants.} Three invariants are maintained at every return point. (I1) \emph{Support invariant}: the internal support cache equals $\sigma_{\mathcal{P}}^{int}(u,v)$ for every induced community edge $(u,v)$, counted strictly over $\mathcal{G}[C]$. Insertions refresh the cache when they touch $C$; deletions that touch $C$ rebuild the cache exactly because $s$ is small. (I2) \emph{Query-size invariant}: any returned community contains the original query node $q$ and has $|C|=s$. Localized repair excludes $q$ from removal and accepts only exact-size replacements; fallback recomputation is called with the stored query node rather than an arbitrary surviving node. (I3) \emph{Truss-validity invariant}: any returned community satisfies both internal support and triangle connectivity. This is not inferred from hop locality. The implementation explicitly recomputes internal supports for the candidate node set and runs a triangle-connectivity check before accepting a repair. If validation fails, the candidate is rejected and the algorithm either tries another local repair or invokes \textsc{FullRecompute}. Thus localized repair is an optimization path, not a source of weakened correctness.
+
+\subsection{Complexity Analysis}
+
+\begin{table}[htbp]
+\centering
+\caption{Per-update time complexity under projected source-edge updates. $d_{\mathcal{P}}$ denotes meta-path degree. The recompute row reflects the polynomial-time greedy heuristic; the NP-hard exact B\&B worst-case is exponential.}
+\label{tab:complexity}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{c c c}
+\toprule
+Scenario & Complexity & Typical \\
+\midrule
+Insertion (community miss) & $O(d_{\mathcal{P}}^2)$ index update & $<1$~ms \\
+Insertion (community hit) & $O(d_{\mathcal{P}}^2 + s^3)$ & $<1$~ms \\
+Deletion (community miss) & $O(d_{\mathcal{P}}^2)$ index update & $<1$~ms \\
+Deletion (comm. hit, repair ok) & $O(d_{\mathcal{P}}^2 + s^3 + |\mathcal{B}_h|s^3)$ & 1--10~ms \\
+Deletion (repair fail) & repair cost $+$ greedy recompute & 390--950~ms \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+Table~\ref{tab:complexity} summarizes per-update complexity. The ``repair fail'' row reflects the polynomial-time greedy heuristic fallback used in our implementation (and in the static practical baseline); the NP-hard exact B\&B would carry exponential worst-case cost. The critical insight is that the dominant path is independent of the full graph size after the \mtindex update: most random projected-edge updates do not touch community edges, while the expensive repair/recompute paths activate mainly under targeted deletions. Here $\mathcal{B}_h$ is the bounded-hop candidate set explored by local repair.

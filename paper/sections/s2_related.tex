@@ -1,0 +1,21 @@
+\section{Related Work}
+
+We survey work in three areas: community search in HINs, dynamic graph algorithms, and size-constrained subgraph mining.
+
+\subsection{Community Search in HINs}
+
+Community search over HINs has attracted significant attention. Zhang et al.~\cite{zhang2025scsh} formalized the size-constrained variant (SCSH) using the $(k,\mathcal{P})$-truss model, proved NP-hardness, and proposed Branch \& Bound algorithms (ESG and NSG). Our work extends theirs to the dynamic setting.
+
+Several recent ICDE and PVLDB publications address related problems: SACH~\cite{sach2024icde} introduces significant-attributed community search with segment-based meta-path expansion; a self-training GNN-based approach~\cite{chen2024icde} tackles the MK (Most-likely $K$-sized) community search problem on attributed HINs; Wang et al.~\cite{wang2025pvldb} propose the Structurally Similar Community (SSC) model with four vertex roles. Tang et al.~\cite{tang2025pvldb} address temporal HIN community search with the $(k,T_q,\mathcal{P},\delta)$-core model. Han et al.~\cite{han2025vldb} propose the $(\tau,\rho)$-camp model unifying triangle and quadrilateral semantics. None of these works handle \emph{size-constrained} community maintenance under dynamic edge updates.
+
+\subsection{Dynamic Graph Algorithms}
+
+Dynamic community search has been studied primarily over homogeneous graphs. CS-DAHIN~\cite{song2024tkde} addresses community search over dynamic attributed HINs but does \emph{not} incorporate size constraints. DAHIN-INCE~\cite{cao2025bdsc} proposes incremental learning for dynamic attributed HINs using knowledge distillation. For streaming graphs, Liao et al.~\cite{liao2024pvldb} propose D-truss maintenance over directed streams, and Zhang et al.~\cite{zhang2024arxiv} address community detection over streaming bipartite networks. Our work fills the gap between these dynamic (but unconstrained) methods and Zhang et al.'s static (but size-constrained) framework.
+
+\subsection{Size-Constrained Subgraph Mining}
+
+Beyond HINs, size-constrained dense subgraph discovery has been studied on homogeneous graphs. CCSS~\cite{he2024eswa} proposes conductance-based community search with size constraints. The densest-$k$ subgraph problem has a rich theoretical literature. Our $(k,\mathcal{P})$-truss model inherits its structural guarantees from this lineage while adding HIN-specific meta-path semantics.
+
+\subsection{Positioning}
+
+To our knowledge, \DynaSCSH is the \emph{first} framework to simultaneously address: (1) size constraints on community cardinality, (2) heterogeneous meta-path semantics, and (3) dynamic edge updates with incremental maintenance. The closest prior works each address at most two of these three dimensions.

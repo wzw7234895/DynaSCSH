@@ -1,0 +1,24 @@
+{
+  "run_id": "A6",
+  "config": {
+    "dataset": "freebase",
+    "k": 5,
+    "size_bound": 20,
+    "num_updates": 500,
+    "update_type": "mixed",
+    "hop_limit": 2,
+    "seed": 42
+  },
+  "dynascsh": {
+    "score": [],
+    "quality_ratio": [],
+    "time": []
+  },
+  "static": {
+    "score": [],
+    "time": []
+  },
+  "periodic": {},
+  "summary": {},
+  "bb_timeout_tracked": true
+}

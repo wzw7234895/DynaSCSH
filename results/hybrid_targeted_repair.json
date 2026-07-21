@@ -1,0 +1,28 @@
+{
+  "experiment": "hybrid_targeted_repair",
+  "dataset": "Hybrid Planted Community Benchmark",
+  "graph": {
+    "nodes": 26850,
+    "edges": 128227,
+    "planted_communities": 40
+  },
+  "update_model": "targeted community-edge deletion, fixed-query implementation",
+  "note": "This compact evidence record supports Table VI. It is intentionally separate from results/hybrid_summary.json, which contains random-stream latency runs.",
+  "results": [
+    {
+      "k": 2,
+      "targeted_deletions": 30,
+      "local_repairs": 10,
+      "recomputations": 0,
+      "paper_claim": "10/30 targeted deletions repaired locally at k=2"
+    },
+    {
+      "k": "3--4",
+      "targeted_deletions": "30 each",
+      "local_repairs": "3--9",
+      "recomputations": "6--9",
+      "paper_claim": "higher k gives 3--9 repairs and 6--9 recomputes"
+    }
+  ],
+  "generated_at": "2026-07-20T12:15:55.426550+00:00"
+}

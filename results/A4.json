@@ -1,0 +1,24 @@
+{
+  "run_id": "A4",
+  "config": {
+    "dataset": "amazon",
+    "k": 4,
+    "size_bound": 15,
+    "num_updates": 1000,
+    "update_type": "insertion",
+    "hop_limit": 2,
+    "seed": 42
+  },
+  "dynascsh": {
+    "score": [],
+    "quality_ratio": [],
+    "time": []
+  },
+  "static": {
+    "score": [],
+    "time": []
+  },
+  "periodic": {},
+  "summary": {},
+  "bb_timeout_tracked": true
+}
