@@ -134,11 +134,6 @@ If you use this artifact before formal publication, cite it as a preprint / subm
 
 Before making this repository public, add a `LICENSE` file and choose the intended open-source terms. A common choice is MIT or Apache-2.0 for code; paper text, figures, and third-party processed data may require separate terms. Until a license file is added, the repository is public for review but not legally open source in the usual GitHub sense.
 
-## Contact
-
-Zhiwei Wang  
-Dalian Maritime University  
-`wzw7234895@gmail.com`
 =======
 # DynaSCSH
 >>>>>>> c5d9685dd6a384d414213ccc13a463f1983534f3
